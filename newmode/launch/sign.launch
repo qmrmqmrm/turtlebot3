@@ -1,0 +1,8 @@
+<launch>
+
+
+  <node pkg="newmode" name="traff_l" type="traffic_l.py"/>
+  <node pkg="newmode" name="traff_r" type="traffic_r.py"/>
+ 
+</launch>
+

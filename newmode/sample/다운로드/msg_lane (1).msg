@@ -1,0 +1,10 @@
+float32 angle
+bool sw
+int32 x1_ye
+int32 y1_ye
+int32 x2_ye
+int32 y2_ye
+int32 x1_wh
+int32 y1_wh
+int32 x2_wh
+int32 y2_wh

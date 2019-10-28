@@ -1,0 +1,7 @@
+<launch>
+
+  <node pkg="newmode" name="cam" type="0_cam.py"/>
+  <node pkg="newmode" name="lane" type="1_Videowriter.py"/>
+
+</launch>
+

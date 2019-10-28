@@ -1,0 +1,19 @@
+<launch>
+
+  <node pkg="newmode" name="lane_move" type="2_lane_move.py"/>
+  <node pkg="newmode" name="det_move" type="3_det_move.py"/>
+  <node pkg="newmode" name="laser_move" type="4_laser_.py"/>
+  <node pkg="newmode" name="mode_ch" type="5_mode_ch.py"/>
+  <node pkg="newmode" name="nav_goal" type="6_pose.py"/>
+  <node pkg="newmode" name="cam_tutorial" type="7_cam_tutorial.py"/>
+  <node pkg="newmode" name="traffic_light" type="9_traffic_light.py"/>
+  <node pkg="newmode" name="twist_ch" type="10_twist_ch.py"/>
+  
+
+
+ 
+
+
+
+</launch>
+
