@@ -3,7 +3,7 @@ import cv2
 import rospy
 import os
 import numpy as np
-from newmode.msg import msg_sign_l,msg_sign_r
+from newmode.msg import msg_sign_r,msg_sign_l, msg_park
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 orb = cv2.ORB_create()
@@ -12,14 +12,17 @@ bridge = CvBridge()
 class TrafficSign:
 	def __init__(self):
 		self.sign_msg = msg_sign_l()
-		self.signpub = rospy.Publisher('/sign_msg_l', msg_sign_l, queue_size=10)
+		self.signpub = rospy.Publisher('/sign_msg_l', msg_sign_l, queue_size=1)
 		self.img_sub = rospy.Subscriber('/image_left', Image, self.img_msg_left)
-		self.data_right = rospy.Subscriber('/sign_msg_r',msg_sign_r, self.imgright)
-		self.sign_right = None
-		#self.frame =None
-	def imgright(self,msg):
-		self.sign_right = msg.name
-			
+		#self.data_left = rospy.Subscriber('/sign_msg_l',msg_sign_l, self.imgleft)
+		self.park = rospy.Subscriber('/parkend',msg_park,self.park_end)
+		self.parkend= 0
+		self.sign_left = None
+		
+	def park_end(self,msg):
+		self.parkend = msg.park
+	#def imgleft(self,msg):
+		#self.sign_left = msg.name	
 
 	def img_msg_left(self,msg):
 		try:
@@ -32,10 +35,11 @@ class TrafficSign:
 		self.noi = cv2.imread("{}noimg.jpeg".format(self.path), cv2.IMREAD_COLOR)
 		self.no = cv2.resize(self.noi, dsize=(200, 200), interpolation=cv2.INTER_LINEAR)
 		
-		self.signtime = 1
+		
+		self.signtime = 2
 		self.out = []
-		self.result = [0,0,0]
-		self.sign_turn = [0,0,1]
+		self.result = [0,0]
+		self.sign_turn = [1,0]
 		self.num = 1
 
 		self.SignColor = []
@@ -47,9 +51,8 @@ class TrafficSign:
 		self.Signdes = []
 				
 		#open to match trafficsigns
-		self.SignColor.append(cv2.imread("{}leftss.png".format(self.path), cv2.IMREAD_COLOR))
-		self.SignColor.append(cv2.imread("{}right.png".format(self.path), cv2.IMREAD_COLOR))
-		self.SignColor.append(cv2.imread("{}TUNN.jpg".format(self.path), cv2.IMREAD_COLOR))
+		self.SignColor.append(cv2.imread("{}parknew.png".format(self.path), cv2.IMREAD_COLOR))
+		self.SignColor.append(cv2.imread("{}avoiinew.jpg".format(self.path), cv2.IMREAD_COLOR))
 
 		for sample in self.SignColor:
 			if sample is None: 
@@ -66,11 +69,14 @@ class TrafficSign:
 			#canny
 			self.Canny.append(cv2.Canny(self.Blur[size], 50, 200))
 			#orb feature save
-			print(size)	
+			
 			kp, des  = orb.detectAndCompute(self.Canny[size], None)
 			self.Signkp.append(kp)
 			self.Signdes.append(des)
-
+			cv2.imshow('si',self.Canny[size])
+			cv2.waitKey(20)
+		print('end')
+		
 	#grayscale change	
 	def gray(self, image):
 		imgGray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -94,7 +100,7 @@ class TrafficSign:
 	def flann(self, image, factor):
 		matching = None
 		matches = []
-		gmatch = [[],[],[]]
+		gmatch = [[],[]]
 		self.out = []
 		sign = 0
 		FLANN_INDEX_LSH = 6 
@@ -113,9 +119,13 @@ class TrafficSign:
 							gmatch[sign].append(m)	
 				except:
 					print('no mathch')
-				if len(gmatch[sign]) > 13:
+				if len(gmatch[sign]) > 15:
+					
 					self.out.append(sign)
-					matching = cv2.drawMatches(self.Resize[sign], self.Signkp[sign], image, self.imgkp, gmatch[sign], matching, flags=2)
+					if sign == 0:
+						matching = cv2.drawMatches(self.Resize[sign], self.Signkp[sign], image, self.imgkp, gmatch[sign], matching, flags=2)
+					else:
+						matching = cv2.drawMatches(self.no, self.Signkp[sign], image, self.imgkp, gmatch[sign], matching, flags=2)
 				else:
 					self.out.append('')	
 					if matching is None:
@@ -125,7 +135,8 @@ class TrafficSign:
 			self.error = 0
 		except:
 			print('error pop')		 			
-			self.error = 1
+			self.error = 1 			
+
 
 	def findsign(self):
 		self.sign_msg.data =0
@@ -136,13 +147,13 @@ class TrafficSign:
 				break
 		if len(self.out) == 0:
 			#print('no match!!!!')
-			self.result = [0,0,0]
+			self.result = [0,0]
 			self.num = 1
 
 		elif len(self.out) == 1:
 			sign = self.out[0]
 			if self.result[sign] == 0: 
-				self.result = [0,0,0]
+				self.result = [0,0]
 				self.result[sign] = 1
 				self.num = 2
 			elif self.result[sign] >= 1:
@@ -150,7 +161,7 @@ class TrafficSign:
 				self.num += 1
 			print(self.result)	
 			
-		elif len(self.out) == 2:
+		else:
 			sign1 = self.out[0]
 			sign2 = self.out[1]
 			if self.result[sign1] > 0:
@@ -160,57 +171,50 @@ class TrafficSign:
 				self.num += 1
 				self.result[sign2] = self.num	
 			else:
-				self.result = [0,0,0]
+				self.result = [0,0]
 				self.num = 1
-			print(self.result)	
-			#self.sign_msg.data=1
+			print(self.result)
 			
-			#self.signpub.publish(self.sign_msg)
-		else:
-			print(len(self.out))
-		
-		self.sign_msg.data2=self.result
+			
+		self.sign_msg.data2=self.result[0]
 		#self.signpub.publish(self.sign_msg)
 
-		if self.sign_turn[0] == 1 and self.result[0] >= self.signtime:	
-			print('LEFT')
-			self.sign_msg.name = 'LEFT'
+		if (self.sign_turn[0] == 1 and self.result[0] >= self.signtime) :
+			print('PARK')
+			self.sign_msg.name = 'PARK'
 			self.sign_msg.data = 1
 			#self.signpub.publish(self.sign_msg)
-			self.sign_turn = [0,0,1]
+			self.sign_turn = [1,0]
 			self.num = 1
 		elif self.sign_turn[1] == 1 and self.result[1] >= self.signtime:
-			print('RIGH')
-			self.sign_msg.name = 'RIGH'
-			self.sign_msg.data = 1
+			#print('AVOI')
+			#self.sign_msg.name = 'AVOI'
+			#sself.sign_msg.data = 1
 			#self.signpub.publish(self.sign_msg)
-			self.sign_turn = [0,0,1]
-			self.num = 1
-		elif self.sign_turn[2] == 1 and self.result[2] >= self.signtime:
-			print('TUNN')
-			self.sign_msg.name = 'TUNN'
-			self.sign_msg.data = 1
-			
-			self.sign_turn = [0,0,0]
+			self.sign_turn = [1,0]
 			self.num = 1
 		else:
 			self.sign_msg.data =0
+		print(self.parkend)
+		if self.parkend == 1:
+			self.sign_msg.name =''
+			#self.parkend = 0
+		if self.parkend == 2:
+			self.sign_msg.name = 'PARK2'
+			#self.parkend = 0
+			
+		rospy.loginfo("%s, %d" % (self.sign_msg.name,self.parkend))	
+			
 		self.signpub.publish(self.sign_msg)
-
 
 		
 def main():
 	rospy.init_node('traff_l')
 	t = TrafficSign()
 	t.set()
-
-	while 1:
-
+	while True:		
 		frame = t.frame
-		
-		frame = cv2.flip(frame, 1)
-		frame = cv2.flip(frame, 0)
-		cv2.imshow('left',frame)		
+		#frame = frameone[0:350,150:640]
 		#grayscale
 		frameG = t.gray(frame)	
 
@@ -225,14 +229,12 @@ def main():
 	
 		#FLANN
 		t.flann(frame, 0.7)
-
 		if t.error == 0:
 		#sign return
 			t.findsign()
 			t.signpub.publish(t.sign_msg)
 		else:
 			pass
-
 		if cv2.waitKey(10) == ord('q'):
 			cv2.destroyAllWindows()
 			return 0
@@ -240,7 +242,6 @@ if __name__ == "__main__":
 
 	try:
 		main()
-		
 	except TypeError as te:
 		print("typeError", te)
 			#cv2.imshow("show", self.Resize[size])	

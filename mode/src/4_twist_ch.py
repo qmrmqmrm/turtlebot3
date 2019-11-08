@@ -6,7 +6,7 @@ from geometry_msgs.msg import Twist
 
 class twist_trans():
 	def __init__(self):
-		self._pub = rospy.Publisher("cmd_vel", Twist, queue_size=10)
+		self._pub = rospy.Publisher("cmd_vel", Twist, queue_size=1)
 		self.pub1 = Twist()
 		self.tw_sub = rospy.Subscriber("/mode_twist", twist, self.callback)
 

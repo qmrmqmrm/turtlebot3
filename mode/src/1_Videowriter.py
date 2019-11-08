@@ -15,21 +15,21 @@ class robo():
 		#self.velocity_publisher = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 		self.img_pub = rospy.Publisher('/image_center', Image, queue_size = 1)
 	
-		self.modesub = rospy.Subscriber('/mode_msg',mode_msg, self.modemsg)
+		#self.modesub = rospy.Subscriber('/mode_msg',mode_msg, self.modemsg)
 		#self.twistpub = rospy.Publisher('/mode_twist', twist, queue_size=10)
-		self.lanepub = rospy.Publisher('/lane_msg',msg_lane,queue_size=10)
+		self.lanepub = rospy.Publisher('/lane_msg',msg_lane,queue_size=1)
 		self.lanemsg= msg_lane()
 		self.lsd = cv2.createLineSegmentDetector(0)
 		#self.vel_msg = twist()
 		self.cap = None
 		self.frame = None
 		self.hsv = None
-		self.mode =None
-		self.cnt = None
+		#self.mode =None
+		#self.cnt = None
 	
-	def modemsg(self,msg):
-		self.mode = msg.mode
-		self.cnt = msg.cnt
+	#def modemsg(self,msg):
+		#self.mode = msg.mode
+		#self.cnt = msg.cnt
 
 	
 	def keeping(self):
@@ -84,7 +84,7 @@ def main():
 	turtle = robo()
 	time.sleep(1.2)
 	rate = rospy.Rate(10)
-	turtle.cap = cv2.VideoCapture(2)
+	turtle.cap = cv2.VideoCapture(1)
 	if not turtle.cap.isOpened():
         	print("open fail camera")
 	while not rospy.is_shutdown():

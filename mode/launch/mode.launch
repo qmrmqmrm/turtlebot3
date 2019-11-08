@@ -1,0 +1,16 @@
+<launch>
+
+  <node pkg="mode" name="lane_move" type="lanemove.py"/>
+  <node pkg="mode" name="laser_move" type="3_laser_.py"/>
+  <node pkg="mode" name="control" type="control.py"/>
+  <node pkg="mode" name="twist_ch" type="4_twist_ch.py"/>
+  <node pkg="mode" name="park" type="parking_test.py"/>
+  
+
+
+ 
+
+
+
+</launch>
+
